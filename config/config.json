@@ -1,0 +1,77 @@
+{
+  "catalog": "azure3_team7_project",
+  "schemas": {
+    "bronze":   "azure3_team7_project.bronze",
+    "silver":   "azure3_team7_project.silver",
+    "gold":     "azure3_team7_project.gold",
+    "platform": "azure3_team7_project.platform"
+  },
+  "tables": {
+    "bronze_pos_transactions":        "azure3_team7_project.bronze.pos_transactions",
+    "bronze_warehouse_inventory":     "azure3_team7_project.bronze.warehouse_inventory",
+    "bronze_purchase_orders":         "azure3_team7_project.bronze.purchase_orders",
+    "bronze_store_inventory":         "azure3_team7_project.bronze.store_inventory",
+    "bronze_product_master":          "azure3_team7_project.bronze.product_master",
+    "bronze_customers":               "azure3_team7_project.bronze.customers",
+    "bronze_store_master":            "azure3_team7_project.bronze.store_master",
+    "bronze_supplier_master":         "azure3_team7_project.bronze.supplier_master",
+
+    "silver_pos_transactions":        "azure3_team7_project.silver.pos_transactions",
+    "silver_warehouse_inventory":     "azure3_team7_project.silver.warehouse_inventory",
+    "silver_purchase_orders":         "azure3_team7_project.silver.purchase_orders",
+    "silver_store_inventory":         "azure3_team7_project.silver.store_inventory",
+    "silver_product_master":          "azure3_team7_project.silver.product_master",
+    "silver_customers":               "azure3_team7_project.silver.customers",
+    "silver_store_master":            "azure3_team7_project.silver.store_master",
+    "silver_supplier_master":         "azure3_team7_project.silver.supplier_master",
+
+    "gold_inventory_summary":         "azure3_team7_project.gold.inventory_summary",
+    "gold_supply_chain_kpis":         "azure3_team7_project.gold.supply_chain_kpis",
+
+    "pipeline_audit":                 "azure3_team7_project.platform.pipeline_audit"
+  },
+  "volumes": {
+    "landing":            "/Volumes/azure3_team7_project/bronze/landing",
+    "bronze_checkpoints": "/Volumes/azure3_team7_project/bronze/checkpoints",
+    "silver_checkpoints": "/Volumes/azure3_team7_project/silver/checkpoints",
+    "gold_checkpoints":   "/Volumes/azure3_team7_project/gold/checkpoints"
+  },
+  "landing_paths": {
+    "pos_transactions_stream": "/Volumes/azure3_team7_project/bronze/landing/pos_transactions_stream",
+    "pos_transactions_batch":  "/Volumes/azure3_team7_project/bronze/landing/pos_transactions_batch",
+    "warehouse_inventory":     "/Volumes/azure3_team7_project/bronze/landing/warehouse_inventory",
+    "purchase_orders":         "/Volumes/azure3_team7_project/bronze/landing/purchase_orders",
+    "store_inventory":         "/Volumes/azure3_team7_project/bronze/landing/store_inventory",
+    "product_master":          "/Volumes/azure3_team7_project/bronze/landing/product_master",
+    "customers":               "/Volumes/azure3_team7_project/bronze/landing/customers",
+    "store_master":            "/Volumes/azure3_team7_project/bronze/landing/store_master",
+    "supplier_master":         "/Volumes/azure3_team7_project/bronze/landing/supplier_master"
+  },
+  "checkpoint_paths": {
+    "bronze_store_master":            "/Volumes/azure3_team7_project/bronze/checkpoints/store_master",
+    "bronze_supplier_master":         "/Volumes/azure3_team7_project/bronze/checkpoints/supplier_master",
+    "bronze_product_master":          "/Volumes/azure3_team7_project/bronze/checkpoints/product_master",
+    "bronze_customers":               "/Volumes/azure3_team7_project/bronze/checkpoints/customers",
+    "bronze_pos_transactions_stream": "/Volumes/azure3_team7_project/bronze/checkpoints/pos_transactions_stream",
+    "bronze_pos_transactions_batch":  "/Volumes/azure3_team7_project/bronze/checkpoints/pos_transactions_batch",
+    "bronze_warehouse_inventory":     "/Volumes/azure3_team7_project/bronze/checkpoints/warehouse_inventory",
+    "bronze_purchase_orders":         "/Volumes/azure3_team7_project/bronze/checkpoints/purchase_orders",
+    "bronze_store_inventory":         "/Volumes/azure3_team7_project/bronze/checkpoints/store_inventory",
+    "silver_pos_transactions_stream": "/Volumes/azure3_team7_project/silver/checkpoints/pos_transactions_stream",
+    "silver_pos_transactions_batch":  "/Volumes/azure3_team7_project/silver/checkpoints/pos_transactions_batch",
+    "silver_customers":               "/Volumes/azure3_team7_project/silver/checkpoints/customers",
+    "silver_warehouse_inventory":     "/Volumes/azure3_team7_project/silver/checkpoints/warehouse_inventory",
+    "silver_purchase_orders":         "/Volumes/azure3_team7_project/silver/checkpoints/purchase_orders",
+    "silver_store_inventory":         "/Volumes/azure3_team7_project/silver/checkpoints/store_inventory",
+    "gold_inventory_summary":         "/Volumes/azure3_team7_project/gold/checkpoints/inventory_summary",
+    "gold_supply_chain_kpis":         "/Volumes/azure3_team7_project/gold/checkpoints/supply_chain_kpis"
+  },
+  "pipeline": {
+    "vacuum_retain_hours": 168,
+    "watermark_hours": 2
+  },
+  "kafka": {
+    "bootstrap_servers": "",
+    "pos_topic":         "pos-transactions-realtime"
+  }
+}
