@@ -38,6 +38,7 @@ BRONZE_CUSTOMERS_SCHEMA = StructType([
     StructField("source_file",           StringType(),    nullable=False),
     StructField("ingested_at",           TimestampType(), nullable=False),
     StructField("pipeline_run_id",       StringType(),    nullable=False),
+    StructField("ingested_date",         StringType(), nullable=True),  # partition col, derived from ingested_at
 ])
 
 # -----------------------------------------------------------------------------
@@ -134,6 +135,7 @@ BRONZE_PURCHASE_ORDERS_SCHEMA = StructType([
     StructField("source_file",              StringType(),    nullable=False),
     StructField("ingested_at",              TimestampType(), nullable=False),
     StructField("pipeline_run_id",          StringType(),    nullable=False),
+    StructField("ingested_date",            StringType(), nullable=True),  # partition col, derived from ingested_at
 ])
 
 # -----------------------------------------------------------------------------
@@ -158,6 +160,7 @@ BRONZE_STORE_INVENTORY_SCHEMA = StructType([
     StructField("source_file",          StringType(),    nullable=False),
     StructField("ingested_at",          TimestampType(), nullable=False),
     StructField("pipeline_run_id",      StringType(),    nullable=False),
+    StructField("ingested_date",        StringType(), nullable=True),  # partition col, derived from ingested_at
 ])
 
 # -----------------------------------------------------------------------------
@@ -185,6 +188,7 @@ BRONZE_POS_TRANSACTIONS_SCHEMA = StructType([
     StructField("source_file",      StringType(),    nullable=False),
     StructField("ingested_at",      TimestampType(), nullable=False),
     StructField("pipeline_run_id",  StringType(),    nullable=False),
+    StructField("ingested_date",    StringType(), nullable=True),  # partition col, derived from ingested_at
 ])
 
 # -----------------------------------------------------------------------------
@@ -208,6 +212,7 @@ BRONZE_WAREHOUSE_INVENTORY_SCHEMA = StructType([
     StructField("source_file",      StringType(),    nullable=False),
     StructField("ingested_at",      TimestampType(), nullable=False),
     StructField("pipeline_run_id",  StringType(),    nullable=False),
+    StructField("ingested_date",    StringType(), nullable=True),  # partition col, derived from ingested_at
 ])
 
 
@@ -349,7 +354,7 @@ SILVER_PURCHASE_ORDERS_SCHEMA = StructType([
     StructField("unit_cost",                DecimalType(10, 2),  nullable=True),
     StructField("status",                   StringType(),        nullable=True),
     StructField("quality_rating",           DecimalType(4, 2),   nullable=True),
-    StructField("order_year_month",         StringType(), nullable=True),  # derived from order_date, partition col
+    StructField("order_year_month",         StringType(),        nullable=True),  # partition col, derived from order_date
     # --- flattened from delivery_notes nested JSON ---
     StructField("carrier",                  StringType(),        nullable=True),
     StructField("tracking_number",          StringType(),        nullable=True),
