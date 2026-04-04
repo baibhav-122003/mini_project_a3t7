@@ -2,14 +2,14 @@
 import uuid
 from datetime import datetime
 
-def start_audit(spark, pipeline_name, target_table, 
+def start_audit(spark, project_root, pipeline_name, target_table, 
                 source_table=None, extra=None):
     """
     Call at the start of every pipeline.
     Returns run_id — pass this to end_audit when done.
     """
     import json
-    with open("/Workspace/Shared/mini_project_a3t7/config/config.json") as f:
+    with open(f"{project_root}/config/config.json") as f:
         cfg = json.load(f)
     
     AUDIT_TABLE = cfg["tables"]["pipeline_audit"]
@@ -42,7 +42,7 @@ def start_audit(spark, pipeline_name, target_table,
     return run_id
 
 
-def end_audit(spark, run_id, status, 
+def end_audit(spark, project_root, run_id, status, 
               rows_read=None, rows_written=None, 
               rows_rejected=None, error=None, extra=None):
     """
@@ -50,7 +50,7 @@ def end_audit(spark, run_id, status,
     Status should be: SUCCESS or FAILED
     """
     import json
-    with open("/Workspace/Shared/mini_project_a3t7/config/config.json") as f:
+    with open(f"{project_root}/config/config.json") as f:
         cfg = json.load(f)
 
     AUDIT_TABLE = cfg["tables"]["pipeline_audit"]
@@ -83,7 +83,7 @@ def end_audit(spark, run_id, status,
           f"rows_read: {rows_read} | rows_written: {rows_written}")
 
 
-def get_last_successful_run_time(spark, pipeline_name):
+def get_last_successful_run_time(spark, project_root, pipeline_name):
     """
     Returns the end_time of the last successful run for a given pipeline.
     Used as watermark for incremental spark.read — only process new rows
@@ -105,7 +105,7 @@ def get_last_successful_run_time(spark, pipeline_name):
     import json
     from pyspark.sql.functions import col
  
-    with open("/Workspace/Shared/mini_project_a3t7/config/config.json") as f:
+    with open(f"{project_root}/config/config.json") as f:
         cfg = json.load(f)
  
     AUDIT_TABLE = cfg["tables"]["pipeline_audit"]

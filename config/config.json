@@ -58,11 +58,6 @@
     "bronze_purchase_orders":         "/Volumes/azure3_team7_project/bronze/checkpoints/purchase_orders",
     "bronze_store_inventory":         "/Volumes/azure3_team7_project/bronze/checkpoints/store_inventory",
     "silver_pos_transactions_stream": "/Volumes/azure3_team7_project/silver/checkpoints/pos_transactions_stream",
-    "silver_pos_transactions_batch":  "/Volumes/azure3_team7_project/silver/checkpoints/pos_transactions_batch",
-    "silver_customers":               "/Volumes/azure3_team7_project/silver/checkpoints/customers",
-    "silver_warehouse_inventory":     "/Volumes/azure3_team7_project/silver/checkpoints/warehouse_inventory",
-    "silver_purchase_orders":         "/Volumes/azure3_team7_project/silver/checkpoints/purchase_orders",
-    "silver_store_inventory":         "/Volumes/azure3_team7_project/silver/checkpoints/store_inventory",
     "gold_inventory_summary":         "/Volumes/azure3_team7_project/gold/checkpoints/inventory_summary",
     "gold_supply_chain_kpis":         "/Volumes/azure3_team7_project/gold/checkpoints/supply_chain_kpis"
   },
