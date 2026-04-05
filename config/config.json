@@ -25,8 +25,15 @@
     "silver_store_master":            "azure3_team7_project.silver.store_master",
     "silver_supplier_master":         "azure3_team7_project.silver.supplier_master",
 
-    "gold_inventory_summary":         "azure3_team7_project.gold.inventory_summary",
-    "gold_supply_chain_kpis":         "azure3_team7_project.gold.supply_chain_kpis",
+    "gold_dim_product":               "azure3_team7_project.gold.dim_product",
+    "gold_dim_store":                 "azure3_team7_project.gold.dim_store",
+    "gold_dim_supplier":              "azure3_team7_project.gold.dim_supplier",
+    "gold_dim_customer":              "azure3_team7_project.gold.dim_customer",
+    "gold_fact_inventory_full":       "azure3_team7_project.gold.fact_inventory_full",
+    "gold_fact_inventory_kpis":       "azure3_team7_project.gold.fact_inventory_kpis",
+    "gold_fact_demand_trends":        "azure3_team7_project.gold.fact_demand_trends",
+    "gold_fact_customer_sales":       "azure3_team7_project.gold.fact_customer_sales",
+    "gold_fact_supplier_performance": "azure3_team7_project.gold.fact_supplier_performance",
 
     "pipeline_audit":                 "azure3_team7_project.platform.pipeline_audit"
   },
@@ -57,9 +64,7 @@
     "bronze_warehouse_inventory":     "/Volumes/azure3_team7_project/bronze/checkpoints/warehouse_inventory",
     "bronze_purchase_orders":         "/Volumes/azure3_team7_project/bronze/checkpoints/purchase_orders",
     "bronze_store_inventory":         "/Volumes/azure3_team7_project/bronze/checkpoints/store_inventory",
-    "silver_pos_transactions_stream": "/Volumes/azure3_team7_project/silver/checkpoints/pos_transactions_stream",
-    "gold_inventory_summary":         "/Volumes/azure3_team7_project/gold/checkpoints/inventory_summary",
-    "gold_supply_chain_kpis":         "/Volumes/azure3_team7_project/gold/checkpoints/supply_chain_kpis"
+    "silver_pos_transactions_stream": "/Volumes/azure3_team7_project/silver/checkpoints/pos_transactions_stream"
   },
   "pipeline": {
     "vacuum_retain_hours": 168,

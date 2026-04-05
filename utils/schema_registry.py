@@ -443,3 +443,301 @@ SILVER_WAREHOUSE_INVENTORY_SCHEMA = StructType([
     StructField("pipeline_run_id",  StringType(),    nullable=False),
     StructField("source_system",    StringType(),    nullable=False),
 ])
+
+
+ 
+# =============================================================================
+# GOLD SCHEMAS
+# Rule: nullable=False on surrogate/business keys only
+#       All derived/computed columns nullable=True
+#       Audit columns: _gold_processed_at, pipeline_run_id
+#       No ingested_at / processed_at — gold is derived, not ingested
+# =============================================================================
+ 
+# -----------------------------------------------------------------------------
+# gold.dim_product
+# Source : silver.product_master (is_current=True only)
+# Grain  : one row per product_id (current version)
+# Derived: profit_margin_pct, price_tier
+# -----------------------------------------------------------------------------
+GOLD_DIM_PRODUCT_SCHEMA = StructType([
+    StructField("product_id",         StringType(),        nullable=False),
+    StructField("product_name",       StringType(),        nullable=True),
+    StructField("category",           StringType(),        nullable=True),
+    StructField("subcategory",        StringType(),        nullable=True),
+    StructField("brand",              StringType(),        nullable=True),
+    StructField("supplier_id",        StringType(),        nullable=True),
+    StructField("cost_price",         DecimalType(10, 2),  nullable=True),
+    StructField("selling_price",      DecimalType(10, 2),  nullable=True),
+    StructField("profit_margin_pct",  DoubleType(),        nullable=True),
+    StructField("price_tier",         StringType(),        nullable=True),
+    StructField("weight",             DoubleType(),        nullable=True),
+    StructField("length",             DoubleType(),        nullable=True),
+    StructField("width",              DoubleType(),        nullable=True),
+    StructField("height",             DoubleType(),        nullable=True),
+    StructField("status",             StringType(),        nullable=True),
+    StructField("effective_date",     DateType(),          nullable=True),
+    StructField("expiry_date",        DateType(),          nullable=True),  # null = currently active
+    # --- audit ---
+    StructField("_gold_processed_at", TimestampType(),     nullable=False),
+    StructField("pipeline_run_id",    StringType(),        nullable=False),
+])
+ 
+# -----------------------------------------------------------------------------
+# gold.dim_store
+# Source : silver.store_master (is_current=True only)
+# Grain  : one row per store_id (current version)
+# Derived: years_in_operation, store_size_tier
+# -----------------------------------------------------------------------------
+GOLD_DIM_STORE_SCHEMA = StructType([
+    StructField("store_id",            StringType(),    nullable=False),
+    StructField("store_name",          StringType(),    nullable=True),
+    StructField("region",              StringType(),    nullable=True),
+    StructField("city",                StringType(),    nullable=True),
+    StructField("store_type",          StringType(),    nullable=True),
+    StructField("store_size_tier",     StringType(),    nullable=True),
+    StructField("opening_date",        DateType(),      nullable=True),
+    StructField("years_in_operation",  DoubleType(),    nullable=True),
+    # --- audit ---
+    StructField("_gold_processed_at",  TimestampType(), nullable=False),
+    StructField("pipeline_run_id",     StringType(),    nullable=False),
+])
+ 
+# -----------------------------------------------------------------------------
+# gold.dim_supplier
+# Source : silver.supplier_master (is_current=True only)
+# Grain  : one row per supplier_id (current version)
+# Derived: baseline_risk_tier, performance_band
+# NOTE   : actual_risk_tier (from PO data) lives in supplier_performance_fact
+# -----------------------------------------------------------------------------
+GOLD_DIM_SUPPLIER_SCHEMA = StructType([
+    StructField("supplier_id",          StringType(),       nullable=False),
+    StructField("supplier_name",        StringType(),       nullable=True),
+    StructField("category",             StringType(),       nullable=True),
+    StructField("performance_rating",   DecimalType(4, 2),  nullable=True),
+    StructField("on_time_delivery_pct", DecimalType(5, 2),  nullable=True),
+    StructField("baseline_risk_tier",   StringType(),       nullable=True),
+    StructField("performance_band",     StringType(),       nullable=True),
+    # --- audit ---
+    StructField("_gold_processed_at",   TimestampType(),    nullable=False),
+    StructField("pipeline_run_id",      StringType(),       nullable=False),
+])
+ 
+# -----------------------------------------------------------------------------
+# gold.dim_customer
+# Source : silver.customers
+# Grain  : one row per customer_id
+# Merge  : MERGE on customer_id (daily incremental)
+# -----------------------------------------------------------------------------
+GOLD_DIM_CUSTOMER_SCHEMA = StructType([
+    StructField("customer_id",           StringType(),           nullable=False),
+    StructField("age_group",             StringType(),           nullable=True),
+    StructField("gender",                StringType(),           nullable=True),
+    StructField("zip_code",              StringType(),           nullable=True),
+    StructField("loyalty_tier",          StringType(),           nullable=True),
+    StructField("first_purchase_date",   DateType(),             nullable=True),
+    StructField("total_spend",           DecimalType(10, 2),     nullable=True),
+    StructField("preferred_categories",  ArrayType(StringType()), nullable=True),
+    # --- audit ---
+    StructField("_gold_processed_at",    TimestampType(),        nullable=False),
+    StructField("pipeline_run_id",       StringType(),           nullable=False),
+])
+
+ 
+# -----------------------------------------------------------------------------
+# gold.fact_inventory_full
+# Source  : silver.pos_transactions + silver.warehouse_inventory
+#           + silver.product_master (is_current=True)
+# Grain   : store_id + product_id + snapshot_date
+# Refresh : Daily dynamic partition overwrite by snapshot_date
+# NOTE    : snapshot_date derived from transaction_ts (our col, his event_timestamp)
+#           inventory_snapshot_key = SHA256(store_id|product_id|snapshot_date)
+#           warehouse stock aggregated across all warehouses per product
+#           avg_daily_sales_30d computed via 30d rolling window before stock_cover_days
+#           _gold_processed_at replaces his dw_created_at
+#           This table feeds: fact_inventory_kpis, fact_demand_trends
+# -----------------------------------------------------------------------------
+GOLD_FACT_INVENTORY_FULL_SCHEMA = StructType([
+    StructField("inventory_snapshot_key", StringType(),              nullable=False),
+    StructField("snapshot_date",          DateType(),                nullable=False),
+    StructField("store_id",               StringType(),              nullable=False),
+    StructField("product_id",             StringType(),              nullable=False),
+    StructField("supplier_id",            StringType(),              nullable=True),
+    StructField("product_name",           StringType(),              nullable=True),
+    StructField("category",               StringType(),              nullable=True),
+    StructField("subcategory",            StringType(),              nullable=True),
+    StructField("brand",                  StringType(),              nullable=True),
+    StructField("status",                 StringType(),              nullable=True),
+    StructField("cost_price",             DoubleType(),              nullable=True),
+    StructField("selling_price",          DoubleType(),              nullable=True),
+    # --- sales metrics (aggregated from pos_transactions) ---
+    StructField("units_sold",             LongType(),                nullable=True),
+    StructField("avg_daily_sales_30d",    DoubleType(),              nullable=True),
+    StructField("total_revenue",          DoubleType(),              nullable=True),
+    StructField("avg_selling_price",      DoubleType(),              nullable=True),
+    StructField("transaction_count",      LongType(),                nullable=True),
+    StructField("unique_customers",       LongType(),                nullable=True),
+    StructField("units_sold_online",      LongType(),                nullable=True),
+    StructField("units_sold_offline",     LongType(),                nullable=True),
+    StructField("revenue_cash",           DoubleType(),              nullable=True),
+    StructField("revenue_credit_card",    DoubleType(),              nullable=True),
+    StructField("revenue_debit_card",     DoubleType(),              nullable=True),
+    StructField("revenue_mobile_payment", DoubleType(),              nullable=True),
+    # --- profitability ---
+    StructField("gross_profit",           DoubleType(),              nullable=True),
+    StructField("gross_margin_pct",       DoubleType(),              nullable=True),
+    StructField("profit_per_unit",        DoubleType(),              nullable=True),
+    # --- warehouse stock (aggregated from warehouse_inventory) ---
+    StructField("current_stock_qty",      LongType(),                nullable=True),
+    StructField("reserved_stock_qty",     LongType(),                nullable=True),
+    StructField("available_stock_qty",    LongType(),                nullable=True),
+    StructField("reorder_level",          LongType(),                nullable=True),
+    StructField("max_stock",              LongType(),                nullable=True),
+    StructField("warehouse_count",        LongType(),                nullable=True),
+    StructField("primary_location_zone",  StringType(),              nullable=True),
+    StructField("warehouse_ids",          ArrayType(StringType()),   nullable=True),
+    StructField("last_stock_updated",     TimestampType(),           nullable=True),
+    # --- inventory KPIs ---
+    StructField("stock_cover_days",       DoubleType(),              nullable=True),
+    StructField("sell_through_rate",      DoubleType(),              nullable=True),
+    StructField("stock_utilisation_pct",  DoubleType(),              nullable=True),
+    StructField("online_sales_pct",       DoubleType(),              nullable=True),
+    StructField("reorder_flag",           IntegerType(),             nullable=True),  # 0/1
+    StructField("stockout_flag",          IntegerType(),             nullable=True),  # 0/1
+    StructField("overstock_flag",         IntegerType(),             nullable=True),  # 0/1
+    # --- audit ---
+    StructField("_gold_processed_at",     TimestampType(),           nullable=False),
+    StructField("pipeline_run_id",        StringType(),              nullable=False),
+])
+ 
+# -----------------------------------------------------------------------------
+# gold.fact_inventory_kpis
+# Source  : gold.fact_inventory_full
+# Grain   : store_id + product_id + snapshot_date
+# Refresh : Daily dynamic partition overwrite by snapshot_date
+# NOTE    : Rolling window KPIs (30d, 90d) computed on top of fact_inventory_full
+#           Matches PBI connected table: inventory_kpis1
+#           stock_value derived here: current_stock_qty * cost_price
+# -----------------------------------------------------------------------------
+GOLD_FACT_INVENTORY_KPIS_SCHEMA = StructType([
+    StructField("store_id",                 StringType(),  nullable=False),
+    StructField("product_id",               StringType(),  nullable=False),
+    StructField("snapshot_date",            DateType(),    nullable=False),
+    StructField("category",                 StringType(),  nullable=True),
+    StructField("subcategory",              StringType(),  nullable=True),
+    StructField("brand",                    StringType(),  nullable=True),
+    # --- rolling KPIs ---
+    StructField("inventory_turnover_ratio", DoubleType(),  nullable=True),
+    StructField("overstock_risk_index",     DoubleType(),  nullable=True),
+    StructField("avg_daily_sales_30d",      DoubleType(),  nullable=True),
+    StructField("avg_days_on_hand_30d",     DoubleType(),  nullable=True),
+    StructField("units_sold_90d",           LongType(),    nullable=True),
+    StructField("cogs_30d",                 DoubleType(),  nullable=True),
+    StructField("avg_stock_value_30d",      DoubleType(),  nullable=True),
+    # --- dead stock ---
+    StructField("is_dead_stock",            BooleanType(), nullable=True),
+    # --- stock columns ---
+    StructField("current_stock_qty",        LongType(),    nullable=True),
+    StructField("available_stock_qty",      LongType(),    nullable=True),
+    StructField("reserved_stock_qty",       LongType(),    nullable=True),
+    StructField("stock_value",              DoubleType(),  nullable=True),
+    StructField("stock_value_at_risk",      DoubleType(),  nullable=True),
+    # --- flags (0/1 integers) ---
+    StructField("stockout_flag",            IntegerType(), nullable=True),
+    StructField("reorder_flag",             IntegerType(), nullable=True),
+    StructField("overstock_flag",           IntegerType(), nullable=True),
+    # --- health label ---
+    StructField("inventory_health",         StringType(),  nullable=True),
+    # --- audit ---
+    StructField("_gold_processed_at",       TimestampType(), nullable=False),
+    StructField("pipeline_run_id",          StringType(),    nullable=False),
+])
+ 
+# -----------------------------------------------------------------------------
+# gold.fact_demand_trends
+# Source  : gold.fact_inventory_full
+# Grain   : store_id + product_id + snapshot_date
+# Refresh : Daily full overwrite partitioned by year_month
+# NOTE    : Rolling demand KPIs (7d, 30d, 90d) need full history — full recompute
+#           inventory_date = snapshot_date cast to TimestampType
+#           to match PBI connected table schema exactly (demand_intelligence)
+# -----------------------------------------------------------------------------
+GOLD_FACT_DEMAND_TRENDS_SCHEMA = StructType([
+    StructField("store_id",          StringType(),    nullable=False),
+    StructField("product_id",        StringType(),    nullable=False),
+    StructField("inventory_date",    TimestampType(), nullable=False),  # = snapshot_date as timestamp, matches PBI
+    StructField("year_num",          IntegerType(),   nullable=True),
+    StructField("month_num",         IntegerType(),   nullable=True),
+    StructField("year_month",        StringType(),    nullable=True),   # partition col e.g. "2024-01"
+    StructField("units_sold",        LongType(),      nullable=True),
+    StructField("avg_units_7d",      DoubleType(),    nullable=True),
+    StructField("avg_units_30d",     DoubleType(),    nullable=True),
+    StructField("avg_units_90d",     DoubleType(),    nullable=True),
+    StructField("avg_rev_7d",        DoubleType(),    nullable=True),
+    StructField("avg_rev_30d",       DoubleType(),    nullable=True),
+    StructField("seasonality_index", DoubleType(),    nullable=True),
+    StructField("trend_direction",   StringType(),    nullable=True),   # Rising / Falling / Stable
+    # --- audit ---
+    StructField("_gold_processed_at", TimestampType(), nullable=False),
+    StructField("pipeline_run_id",    StringType(),    nullable=False),
+])
+ 
+# -----------------------------------------------------------------------------
+# gold.fact_customer_sales
+# Source  : silver.pos_transactions + silver.customers
+# Grain   : one row per transaction_id (no aggregation — enriched transactions)
+# Refresh : Daily dynamic partition overwrite by transaction_date
+# NOTE    : transaction_ts = our column name (his event_timestamp)
+#           transaction_date = our column name (his inventory_date), partition col
+#           customer_tenure_days = datediff(today, first_purchase_date)
+#           Left join with customers — anonymous transactions (null customer_id) kept
+#           Matches PBI connected table: fact_customer_sales
+# -----------------------------------------------------------------------------
+GOLD_FACT_CUSTOMER_SALES_SCHEMA = StructType([
+    StructField("transaction_id",       StringType(),            nullable=False),
+    StructField("customer_id",          StringType(),            nullable=True),   # null = anonymous
+    StructField("store_id",             StringType(),            nullable=False),
+    StructField("product_id",           StringType(),            nullable=False),
+    StructField("transaction_ts",       TimestampType(),         nullable=False),
+    StructField("quantity",             IntegerType(),           nullable=False),
+    StructField("unit_price",           DoubleType(),            nullable=False),
+    StructField("total_amount",         DoubleType(),            nullable=False),
+    # --- customer attributes (left joined from silver.customers) ---
+    StructField("age_group",            StringType(),            nullable=True),
+    StructField("gender",               StringType(),            nullable=True),
+    StructField("zip_code",             StringType(),            nullable=True),
+    StructField("loyalty_tier",         StringType(),            nullable=True),
+    StructField("preferred_categories", ArrayType(StringType()), nullable=True),
+    StructField("customer_tenure_days", IntegerType(),           nullable=True),   # datediff(today, first_purchase_date)
+    # --- transaction attributes ---
+    StructField("channel",              StringType(),            nullable=True),
+    StructField("payment_method",       StringType(),            nullable=True),
+    StructField("transaction_date",     DateType(),              nullable=False),  # partition col
+    # --- audit ---
+    StructField("_fact_processed_at",   TimestampType(),         nullable=False),
+    StructField("pipeline_run_id",      StringType(),            nullable=False),
+])
+ 
+# -----------------------------------------------------------------------------
+# gold.fact_supplier_performance
+# Source  : silver.purchase_orders
+# Grain   : one row per supplier_id (aggregate across all PO history)
+# Refresh : Daily full overwrite (200 suppliers, always full recompute)
+# NOTE    : norm_otd, norm_quality, norm_lt_var are intermediate columns —
+#           computed in notebook but NOT present in this schema (dropped before write)
+#           Matches PBI connected table: supplier_performance_fact
+# -----------------------------------------------------------------------------
+GOLD_FACT_SUPPLIER_PERFORMANCE_SCHEMA = StructType([
+    StructField("supplier_id",         StringType(),  nullable=False),
+    StructField("otd_pct",             DoubleType(),  nullable=True),   # on-time delivery %
+    StructField("lead_time_variance",  DoubleType(),  nullable=True),   # stddev of delay days
+    StructField("avg_delay_days",      DoubleType(),  nullable=True),
+    StructField("avg_quality_rating",  DoubleType(),  nullable=True),
+    StructField("total_orders",        LongType(),    nullable=True),
+    StructField("total_po_value",      DoubleType(),  nullable=True),
+    StructField("supplier_risk_score", DoubleType(),  nullable=True),   # 0-1, higher = better
+    StructField("actual_risk_tier",    StringType(),  nullable=True),   # Low / Medium / High
+    # --- audit ---
+    StructField("_gold_processed_at",  TimestampType(), nullable=False),
+    StructField("pipeline_run_id",     StringType(),    nullable=False),
+])
