@@ -611,6 +611,54 @@ GOLD_FACT_INVENTORY_FULL_SCHEMA = StructType([
 ])
  
 # -----------------------------------------------------------------------------
+# gold.fact_daily_inventory
+# Source  : silver.pos_transactions + silver.warehouse_inventory
+#           + silver.product_master (is_current=True) + silver.store_inventory
+# Grain   : store_id + product_id + transaction_date
+# Refresh : Daily dynamic partition overwrite by transaction_date
+# NOTE    : inventory_date = transaction_date cast to TimestampType (matches PBI)
+#           current_quantity = store shelf stock (from silver.store_inventory)
+#           current_stock    = warehouse stock (from silver.warehouse_inventory)
+#           days_on_hand based on store shelf quantity / daily units sold
+#           is_stockout / is_low_stock based on store shelf quantity
+# -----------------------------------------------------------------------------
+GOLD_FACT_DAILY_INVENTORY_SCHEMA = StructType([
+    StructField("store_id",                StringType(),  nullable=True),
+    StructField("product_id",              StringType(),  nullable=True),
+    StructField("transaction_date",        DateType(),    nullable=False),  # partition col
+    # --- sales (from pos_transactions) ---
+    StructField("units_sold",              LongType(),    nullable=True),
+    StructField("revenue",                 DoubleType(),  nullable=True),
+    StructField("transaction_count",       LongType(),    nullable=True),
+    StructField("avg_unit_price",          DoubleType(),  nullable=True),
+    # --- warehouse stock (from warehouse_inventory) ---
+    StructField("current_stock",           LongType(),    nullable=True),
+    StructField("available_stock",         LongType(),    nullable=True),
+    StructField("reorder_level",           DoubleType(),  nullable=True),
+    StructField("max_stock",               DoubleType(),  nullable=True),
+    # --- product attributes (from product_master, is_current=True) ---
+    StructField("cost_price",              DoubleType(),  nullable=True),
+    StructField("selling_price",           DoubleType(),  nullable=True),
+    StructField("category",                StringType(),  nullable=True),
+    StructField("supplier_id",             StringType(),  nullable=True),
+    # --- store shelf stock (from store_inventory) ---
+    StructField("current_quantity",        IntegerType(), nullable=True),
+    StructField("expiry_date",             DateType(),    nullable=True),
+    # --- derived KPIs ---
+    StructField("stock_value",             DoubleType(),  nullable=True),
+    StructField("days_on_hand",            DoubleType(),  nullable=True),
+    StructField("reorder_quantity",        DoubleType(),  nullable=True),
+    StructField("is_stockout",             BooleanType(), nullable=True),
+    StructField("is_low_stock",            BooleanType(), nullable=True),
+    StructField("stock_value_at_cost",     DoubleType(),  nullable=True),
+    StructField("reorder_needed_qty",      DoubleType(),  nullable=True),
+    StructField("inventory_health_status", StringType(),  nullable=True),
+    # --- audit ---
+    StructField("_gold_processed_at",      TimestampType(), nullable=False),
+    StructField("pipeline_run_id",         StringType(),    nullable=False),
+])
+
+# -----------------------------------------------------------------------------
 # gold.fact_inventory_kpis
 # Source  : gold.fact_inventory_full
 # Grain   : store_id + product_id + snapshot_date

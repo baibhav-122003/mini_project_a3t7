@@ -30,10 +30,12 @@
     "gold_dim_supplier":              "azure3_team7_project.gold.dim_supplier",
     "gold_dim_customer":              "azure3_team7_project.gold.dim_customer",
     "gold_fact_inventory_full":       "azure3_team7_project.gold.fact_inventory_full",
+    "gold_fact_daily_inventory":      "azure3_team7_project.gold.fact_daily_inventory",
     "gold_fact_inventory_kpis":       "azure3_team7_project.gold.fact_inventory_kpis",
     "gold_fact_demand_trends":        "azure3_team7_project.gold.fact_demand_trends",
     "gold_fact_customer_sales":       "azure3_team7_project.gold.fact_customer_sales",
     "gold_fact_supplier_performance": "azure3_team7_project.gold.fact_supplier_performance",
+    "gold_dim_date":                  "azure3_team7_project.gold.dim_date",
 
     "pipeline_audit":                 "azure3_team7_project.platform.pipeline_audit"
   },
@@ -72,6 +74,7 @@
   },
   "kafka": {
     "bootstrap_servers": "",
-    "pos_topic":         "pos-transactions-realtime"
+    "pos_topic":         "pos-transactions-realtime",
+    "store_inventory":   "store-inventory-snapshot"
   }
 }
